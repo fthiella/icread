@@ -40,8 +40,6 @@ my $quote = '"';
 
 # ###
 # read parameters (XD file, XDT specs, buff len)
-# I still don't know how to get the total length of a single record from the .XD file, so we have to
-# read it from the command line, it's often 20 or 24 or 16... but it can be anything, depending on the number of keys
 # ###
 
 my ($filenameXD, $filenameXDT, $buff_len) = @ARGV;
@@ -55,11 +53,13 @@ my $row;
 # don't know if it's a bug of the library or if it is the ODBC Columns section that is not not standard
 # also INI files on the Windows platform are case insensitive, while the hash implementation is case sensitive,
 # and to make things worse, hashes have no order... maybe I should switch to another library
-# ##
+# ##
 my $meta = Config::INI::Reader->read_file($filenameXDT);
 my $Table = $meta->{Table};
 my $Columns = $meta->{Columns};
-my $MaxRecordSize = $Table->{MaxRecordSize}; # just trust the contents of the XDT file. Still don't know how to get it from the binary
+my $MaxRecordSize = $Table->{MaxRecordSize}; # just trust the contents of the XDT file...
+
+# my $buff_len = 20; I'm not able to calculate it, so we just ask it on the command line.... until I figure out how to get it
 
 print join $separator, sort keys $Columns;
 print "\n";
@@ -88,6 +88,7 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 
   if ( $status1 =~ /^\x01$/ ) {
 	my @vals = ();
+  	#print substr($row, 20), "\n";
 	
 	for my $key (sort keys $Columns) {
 	    my $col = $meta->{$key};
@@ -98,11 +99,15 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 		  # if the string contains at least one significant character, add it quoted
 		  # not too common in COBOL, but we should escape quotes!
 		  my $field = substr($row, ($buff_len-1)+$col->{Position}, $col->{Length});
-		  if (($field =~ /^[\w\s\*\,\.\/]+$/) or (1==1)) { # some fields contain garbage, just print N/P in such case
+		  if (($field =~ /[^[:print:]]+/) && ($field !~ /\x00/)) { # some fields contain garbage, just print N/P in such case
 		    $field =~ s/\s+$//; # trim left spaces
 		    push @vals, $quote.$field.$quote;  
 		  } else {
-		    push @vals, "N/P";
+                    # only keep printable characters 
+                    $field =~ s/[^[:print:]]+//g;
+                    # remove chr(0)
+                    $field =~ s/\x00//g;
+		    push @vals, $field;
 		  }
 		} else {
 		  # otherwise, consider it null
@@ -140,7 +145,7 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 	    }
 	}
 	
-	print join $separator, @vals; print "\n";
+	print join $separator, @vals; print "\r\n";
   }
 }  
 
