@@ -145,7 +145,8 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 	    }
 	}
 	
-	print join $separator, @vals; print "\r\n";
+	print join $separator, @vals;
+	print "\n";
   }
 }  
 
