@@ -1,5 +1,17 @@
 #!/usr/bin/perl
 
+###############################################################################
+# File:    icreader.pl
+# Author:  Federico Thiella <fthiella@gmail.com>
+# Date:    January 2015
+# Version: Alpha 0.1
+###############################################################################
+#
+# read iCobol .XD data files, using the same .XDT specs used for ODBC,
+# and print columns as CSV values
+# 
+###############################################################################
+
 =pod
     Copyright 2015, Federico Thiella (fthiella@gmail.com)
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,33 +28,78 @@ See the License for the specific language governing permissions and
 =cut
 
 use strict;
-
-###############################################################################
-# File:    icreader.pl
-# Author:  Federico Thiella <fthiella@gmail.com>
-# Date:    January 2015
-# Version: Alpha 0.1
-###############################################################################
-#
-# read iCobol .XD data files, using the same .XDT specs used for ODBC,
-# and print columns as CSV values
-# 
-###############################################################################
+use warnings;
 
 use Config::INI::Reader;
+use Getopt::Long;
 
-# ###
-# international settings
-# ###
-my $separator = ';';
-my $precision = '.';
-my $quote = '"';
+our $VERSION = "0.11";
+our $RELEASEDATE = "July 25st, 2016";
 
-# ###
-# read parameters (XD file, XDT specs, buff len)
-# ###
+sub do_help {
+	print <<endhelp;
+Usage: icreader.pl [options]
+       perl icreader.pl [options]
 
-my ($filenameXD, $filenameXDT, $buff_len) = @ARGV;
+Options:
+  -xd   source XD cobol archive
+  -xdt  record layout XDT file
+  -b    buffer length
+  -s    separator (default ;)
+  -p    precision (default .)
+  -q    quote (default ")
+  -h    help page
+
+Project GitHub page: https://github.com/fthiella/icread
+endhelp
+}
+
+sub do_version {
+	print "./icreader.pl $VERSION ($RELEASEDATE)\n";
+}
+
+# get command line options
+
+my $filenameXD;
+my $filenameXDT;
+my $buff_len;
+my $separator;
+my $precision;
+my $quote;
+my $help;
+my $version;
+
+GetOptions(
+	'xd=s'      => \$filenameXD,
+	'xdt=s'     => \$filenameXDT,
+	'b=i'       => \$buff_len,
+	's=s'       => \$separator,
+	'p=i'       => \$precision,
+	'q=s'       => \$quote,
+	'v'         => \$version,
+	'h'         => \$help,
+);
+
+if ($help)
+{
+	do_help;
+	exit;
+}
+
+if ($version)
+{
+	do_version;
+	exit;
+}
+
+die "Please specfy XD source archive, XDT record layout, and buffer length\n" unless (($filenameXD) && ($filenameXDT) && ($buff_len));
+
+# default international settings
+unless ($separator) { $separator = ';'; }
+unless ($precision) { $precision = '.'; }
+unless ($quote)     { $quote     = '"'; }
+
+# read file
 
 my $header;
 my $row;
@@ -61,7 +118,7 @@ my $MaxRecordSize = $Table->{MaxRecordSize}; # just trust the contents of the XD
 
 # my $buff_len = 20; I'm not able to calculate it, so we just ask it on the command line.... until I figure out how to get it
 
-print join $separator, sort keys $Columns;
+print join $separator, sort keys %{$Columns};
 print "\n";
 
 open(XD, '<', $filenameXD) or die $!;
@@ -90,7 +147,7 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 	my @vals = ();
   	#print substr($row, 20), "\n";
 	
-	for my $key (sort keys $Columns) {
+	for my $key (sort keys %{$Columns}) {
 	    my $col = $meta->{$key};
 	    
 	    for ($col->{Type}) {
