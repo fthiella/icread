@@ -9,17 +9,17 @@ This is a *quick and dirty* tool that does the job.
 
 ## how to use
 
-icreader accepts 3 parameters:
+icreader needs at least 3 parameters:
 
-    ./icreader.pl archive recordlayout recordsize
+    ./icreader.pl -xd archive -xdt recordlayout -b bufferlength
     
-- archive is the .xd icobol file to be converted
-- recordlayout is the .xdt file that describes the format of the icobol archive
-- recordsize is the size of the record (I don't know how to calculate it, try with 8, 14, 20, etc.)
+- *archive* is the .xd icobol file to be converted
+- *recordlayout* is the .xdt file that describes the format of the icobol archive
+- *bufferlength* I couldn't figure out how to calculate it, try with 8, 14, 20, etc. until it works
 
 example:
 
-    ./ireader.pl cobolArchive.xd recordLayout.xdt 24 > extractedData.csv
+    ./ireader.pl -xd cobolArchive.xd -xdt recordLayout.xdt -b 24 > extractedData.csv
 
 ## record layout
 
