@@ -141,9 +141,9 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
   # ###
   # read status, still unsure about the meaning
   # ###
-  my $status1 = substr $row, 1, 1; # \x00 = void row, \x01 = valid row, \x81 = deleted row, other values?
+  my $status1 = substr $row, 1, 2; # \x00\x00 = void row, \x01 = valid row, \x00\x?? = valid, \x81 = deleted row, other values?
 
-  if ( $status1 =~ /^\x01$/ ) {
+  if ( $status1 =~ /^(\x01.*|\x00[^\x00])$/ ) {
 	my @vals = ();
   	#print substr($row, 20), "\n";
 	
@@ -172,7 +172,9 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
 		}
 	      }
 	      elsif (/DISPLAY/i) {
-		push @vals, substr($row, ($buff_len-1)+$col->{Position}, $col->{Precision}).(($col->{Scale} eq "0")?(''):($precision.substr($row, ($buff_len-1)+$col->{Position}+$col->{Precision}, $col->{Scale})));
+	        my $field = substr($row, ($buff_len-1)+$col->{Position}, $col->{Precision}).(($col->{Scale} eq "0")?(''):($precision.substr($row, ($buff_len-1)+$col->{Position}+$col->{Precision}, $col->{Scale})));
+	        $field =~ s/\x00//g;
+            push @vals, $field;
 	      }
 	      elsif (/UNSIGNED COMP/i) { # ignoring scale at the moment
 		if ($col->{Length} == 1) {
