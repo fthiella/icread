@@ -3,8 +3,8 @@
 ###############################################################################
 # File:    icreader.pl
 # Author:  Federico Thiella <fthiella@gmail.com>
-# Date:    January 2015
-# Version: Alpha 0.1
+# Date:    December 2016
+# Version: 0.12
 ###############################################################################
 #
 # read iCobol .XD data files, using the same .XDT specs used for ODBC,
@@ -33,8 +33,8 @@ use warnings;
 use Config::INI::Reader;
 use Getopt::Long;
 
-our $VERSION = "0.11";
-our $RELEASEDATE = "July 25st, 2016";
+our $VERSION = "0.12";
+our $RELEASEDATE = "December 15th, 2016";
 
 sub do_help {
 	print <<endhelp;
@@ -143,9 +143,13 @@ while ( (read (XD, $row, $MaxRecordSize + $buff_len)) != 0 ) {
   # ###
   my $status1 = substr $row, 1, 2; # \x00\x00 = void row, \x01 = valid row, \x00\x?? = valid, \x81 = deleted row, other values?
 
-  if ( $status1 =~ /^(\x01.*|\x00[^\x00])$/ ) {
+  if ( ( $status1 =~ /^(\x01.*|\x10.*|\x11.*|\x00[^\x00])$/ ) ) {
 	my @vals = ();
   	#print substr($row, 20), "\n";
+
+  	#my $string = $status1;
+  	#$string =~ s/(.)/sprintf("x%02x ",ord($1))/eg;
+    #print "\nVALUTATO= $string\n";
 	
 	for my $key (sort keys %{$Columns}) {
 	    my $col = $meta->{$key};
